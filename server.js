@@ -23,6 +23,7 @@ app.use("/api", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminOrderRoutes);
+app.use("/api/payment", require("./routes/payment"));
 
 
 // Test Route
