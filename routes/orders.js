@@ -100,6 +100,10 @@ router.post("/", authenticate, async (req, res) => {
   address_label,
   address_text,
 
+  razorpay_order_id,
+  razorpay_payment_id,
+  razorpay_signature,
+
   lat,
   lng
 } = req.body;
@@ -163,37 +167,11 @@ for (const item of items) {
     const discount = 0;
     const total = subtotal + delivery_fee - discount;
 
-    // Current month (YYYYMM)
-const now = new Date();
-const yearMonth =
-  now.getFullYear().toString() +
-  String(now.getMonth() + 1).padStart(2, "0");
+    // Generate a unique monthly order code from PostgreSQL
+const { data: order_code, error: orderCodeError } =
+  await supabase.rpc("generate_order_code");
 
-// Find last order for this month
-const { data: lastOrder, error: lastError } = await supabase
-  .from("orders")
-  .select("order_code")
-  .like("order_code", `ABZ-${yearMonth}-%`)
-  .order("id", { ascending: false })
-  .limit(1)
-  .maybeSingle();
-
-if (lastError) throw lastError;
-
-// Next sequence
-let sequence = 1;
-
-if (lastOrder?.order_code) {
-  const lastSeq = parseInt(
-    lastOrder.order_code.split("-")[2],
-    10
-  );
-
-  sequence = lastSeq + 1;
-}
-
-const order_code =
-  `ABZ-${yearMonth}-${String(sequence).padStart(4, "0")}`;
+if (orderCodeError) throw orderCodeError;
 
     // Create Order
     const { data: order, error: orderError } = await supabase
@@ -205,6 +183,10 @@ const order_code =
   status: "placed",
 
 payment_method,
+
+razorpay_order_id,
+razorpay_payment_id,
+razorpay_signature,
 
 payment_status:
   payment_method === "cod"
